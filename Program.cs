@@ -5,32 +5,32 @@ using System.Text.Json;
 using System.IO;
 using System.Diagnostics;
 
-class Knoten
+class Node
 {
-    private readonly List<Kante> _kanten = new();
-    private readonly string _bedeutung;
+    private readonly List<Edge> _edges = new();
+    private readonly string _label;
     private string? _url;
 
-    public Knoten(string bedeutung) => _bedeutung = bedeutung;
+    public Node(string label) => _label = label;
 
-    public void add_kante(Kante k) => _kanten.Add(k);
-    public int anzahl_kanten() => _kanten.Count;
-    public List<Kante> gib_kante() => _kanten;
-    public string gib_inhalt() => _bedeutung;
-    public void set_url(string url) => _url = url;
-    public string? gib_url() => _url;
+    public void AddEdge(Edge e) => _edges.Add(e);
+    public int EdgeCount() => _edges.Count;
+    public List<Edge> GetEdges() => _edges;
+    public string GetLabel() => _label;
+    public void SetUrl(string url) => _url = url;
+    public string? GetUrl() => _url;
 }
 
-class Kante
+class Edge
 {
-    private readonly string _bedeutung;
-    private Knoten? _nextKnoten = null;
+    private readonly string _label;
+    private Node? _nextNode = null;
 
-    public Kante(string bedeutung) => _bedeutung = bedeutung;
+    public Edge(string label) => _label = label;
 
-    public void add_knoten(Knoten k) => _nextKnoten = k;
-    public Knoten? gib_knoten() => _nextKnoten;
-    public string gib_inhalt() => _bedeutung;
+    public void AddNode(Node n) => _nextNode = n;
+    public Node? GetNode() => _nextNode;
+    public string GetLabel() => _label;
 }
 
 class EdgeDTO
@@ -53,13 +53,13 @@ class GraphDTO
 
 class Graph
 {
-    private readonly Dictionary<string, Knoten> _nodes = new();
+    private readonly Dictionary<string, Node> _nodes = new();
 
-    public Knoten GetOrCreate(string id)
+    public Node GetOrCreate(string id)
     {
         if (!_nodes.TryGetValue(id, out var n))
         {
-            n = new Knoten(id);
+            n = new Node(id);
             _nodes[id] = n;
         }
         return n;
@@ -69,25 +69,25 @@ class Graph
     {
         var s = GetOrCreate(subject);
         var o = GetOrCreate(obj);
-        var e = new Kante(predicate);
-        e.add_knoten(o);
-        s.add_kante(e);
+        var e = new Edge(predicate);
+        e.AddNode(o);
+        s.AddEdge(e);
     }
 
     public void SetNodeUrl(string id, string url)
     {
         var n = GetOrCreate(id);
-        n.set_url(url);
+        n.SetUrl(url);
     }
 
     public IEnumerable<(string predicate, string target)> Neighbors(string start, string? predicate = null)
     {
         if (!_nodes.TryGetValue(start, out var s)) yield break;
-        foreach (var e in s.gib_kante())
+        foreach (var e in s.GetEdges())
         {
-            if (predicate != null && e.gib_inhalt() != predicate) continue;
-            var t = e.gib_knoten();
-            if (t != null) yield return (e.gib_inhalt(), t.gib_inhalt());
+            if (predicate != null && e.GetLabel() != predicate) continue;
+            var t = e.GetNode();
+            if (t != null) yield return (e.GetLabel(), t.GetLabel());
         }
     }
 
@@ -123,12 +123,12 @@ class Graph
         {
             Nodes = _nodes.Values.Select(n => new NodeDTO
             {
-                Id = n.gib_inhalt(),
-                Url = n.gib_url(),
-                Edges = n.gib_kante().Select(e => new EdgeDTO
+                Id = n.GetLabel(),
+                Url = n.GetUrl(),
+                Edges = n.GetEdges().Select(e => new EdgeDTO
                 {
-                    Predicate = e.gib_inhalt(),
-                    Target = e.gib_knoten()!.gib_inhalt()
+                    Predicate = e.GetLabel(),
+                    Target = e.GetNode()!.GetLabel()
                 }).ToList()
             }).ToList()
         };
@@ -153,20 +153,20 @@ class Graph
         return g;
     }
 
-    public Knoten? GetNodeForTraversal(string id) =>
+    public Node? GetNodeForTraversal(string id) =>
         _nodes.TryGetValue(id, out var n) ? n : null;
 
     public void PrintAscii(string start, int indent = 0)
     {
         if (!_nodes.TryGetValue(start, out var s)) return;
-        Console.WriteLine(new string(' ', indent) + "- " + s.gib_inhalt());
-        foreach (var e in s.gib_kante())
+        Console.WriteLine(new string(' ', indent) + "- " + s.GetLabel());
+        foreach (var e in s.GetEdges())
         {
-            var t = e.gib_knoten();
+            var t = e.GetNode();
             if (t != null)
             {
-                Console.WriteLine(new string(' ', indent + 2) + $"[{e.gib_inhalt()}]");
-                PrintAscii(t.gib_inhalt(), indent + 4);
+                Console.WriteLine(new string(' ', indent + 2) + $"[{e.GetLabel()}]");
+                PrintAscii(t.GetLabel(), indent + 4);
             }
         }
     }
@@ -176,8 +176,8 @@ class Graph
         var lines = new List<string> { "digraph G {" };
         foreach (var n in _nodes.Values)
         {
-            foreach (var e in n.gib_kante())
-                lines.Add($"  \"{n.gib_inhalt()}\" -> \"{e.gib_knoten()!.gib_inhalt()}\" [label=\"{e.gib_inhalt()}\"];");
+            foreach (var e in n.GetEdges())
+                lines.Add($"  \"{n.GetLabel()}\" -> \"{e.GetNode()!.GetLabel()}\" [label=\"{e.GetLabel()}\"];");
         }
         lines.Add("}");
         return string.Join("\n", lines);
@@ -186,16 +186,16 @@ class Graph
 
 class Program
 {
-    static void durchforsten(Knoten? t_knoten)
+    static void Traverse(Node? startNode)
     {
-        if (t_knoten == null) return;
-        Console.WriteLine("Knoteninhalt: " + t_knoten.gib_inhalt());
-        if (t_knoten.anzahl_kanten() != 0)
+        if (startNode == null) return;
+        Console.WriteLine("Node content: " + startNode.GetLabel());
+        if (startNode.EdgeCount() != 0)
         {
-            foreach (var iKante in t_knoten.gib_kante())
+            foreach (var edge in startNode.GetEdges())
             {
-                Console.WriteLine("Kanteninhalt: " + iKante.gib_inhalt());
-                durchforsten(iKante.gib_knoten());
+                Console.WriteLine("Edge content: " + edge.GetLabel());
+                Traverse(edge.GetNode());
             }
         }
     }
@@ -217,74 +217,74 @@ class Program
         g.SetNodeUrl("Haus", "https://example.com/bilder/haus.png");
         g.SetNodeUrl("Vogel", "https://example.com/audio/vogelsang.mp3");
 
-        Console.WriteLine("[Schnelle Suche] Direkte Nachbarn von 'Katze':");
+        Console.WriteLine("[Quick Search] Direct neighbors of 'Katze':");
         foreach (var (pred, tar) in g.Neighbors("Katze"))
         {
             Console.WriteLine($"  Katze -[{pred}]-> {tar}");
         }
 
-        Console.WriteLine("\n[Schnelle Suche] Nur 'ist'-Beziehungen ab 'Katze':");
+        Console.WriteLine("\n[Quick Search] Only 'is' relations from 'Katze':");
         foreach (var (pred, tar) in g.Neighbors("Katze", "ist"))
             Console.WriteLine($"  Katze -[{pred}]-> {tar}");
 
-        Console.WriteLine("\n[Vertiefte Suche] DFS (bis Tiefe 3) ab 'Katze':");
+        Console.WriteLine("\n[Deep Search] DFS (up to depth 3) from 'Katze':");
         var deep = g.DeepSearchDFS("Katze", 3);
         foreach (var path in deep)
             Console.WriteLine("  - " + string.Join(" -> ", path.Select(s => $"{s.from}-[{s.predicate}]->{s.to}")));
 
         var json = g.ToJson();
         File.WriteAllText("graph.json", json);
-        Console.WriteLine("\nJSON in Datei geschrieben: graph.json");
+        Console.WriteLine("\nJSON written to file: graph.json");
         var jsonFromFile = File.ReadAllText("graph.json");
         var loaded = Graph.FromJson(jsonFromFile);
-        Console.WriteLine("\nReload Check (Nachbarn von 'Katze'):");
+        Console.WriteLine("\nReload check (neighbors of 'Katze'):");
         foreach (var (pred, tar) in loaded.Neighbors("Katze"))
             Console.WriteLine($"  Katze -[{pred}]-> {tar}");
 
-        Console.WriteLine("\nURL-Check (nach Reload):");
-        Console.WriteLine("  Katze URL: " + (loaded.GetNodeForTraversal("Katze")?.gib_url() ?? "-"));
-        Console.WriteLine("  Haus URL:  " + (loaded.GetNodeForTraversal("Haus")?.gib_url() ?? "-"));
-        Console.WriteLine("  Vogel URL: " + (loaded.GetNodeForTraversal("Vogel")?.gib_url() ?? "-"));
+        Console.WriteLine("\nURL check (after reload):");
+        Console.WriteLine("  Katze URL: " + (loaded.GetNodeForTraversal("Katze")?.GetUrl() ?? "-"));
+        Console.WriteLine("  Haus URL:  " + (loaded.GetNodeForTraversal("Haus")?.GetUrl() ?? "-"));
+        Console.WriteLine("  Vogel URL: " + (loaded.GetNodeForTraversal("Vogel")?.GetUrl() ?? "-"));
 
-        Console.WriteLine("\nRessourcen (URLs) zu Knoten:");
+        Console.WriteLine("\nResources (URLs) for nodes:");
         foreach (var name in new[] { "Katze", "Haus", "Vogel" })
-            Console.WriteLine($"  {name}: {loaded.GetNodeForTraversal(name)?.gib_url() ?? "-"}");
+            Console.WriteLine($"  {name}: {loaded.GetNodeForTraversal(name)?.GetUrl() ?? "-"}");
 
-        Console.WriteLine("\nASCII-Darstellung des Graphen:");
+        Console.WriteLine("\nASCII representation of graph:");
         foreach (var node in g.DeepSearchDFS("Katze", 3))
         {
             Console.WriteLine("  " + string.Join(" -> ", node.Select(s => $"{s.from} -[{s.predicate}]-> {s.to}")));
         }
 
-        Console.WriteLine("\nDurchforsten (ab 'Katze'):");
+        Console.WriteLine("\nTraverse (from 'Katze'):");
         var root = g.GetNodeForTraversal("Katze");
-        durchforsten(root);
+        Traverse(root);
 
-        Console.WriteLine("\nASCII-Darstellung ab 'Katze':");
+        Console.WriteLine("\nASCII representation from 'Katze':");
         g.PrintAscii("Katze");
 
         var dot = g.ToDot();
         File.WriteAllText("graph.dot", dot);
-        Console.WriteLine("\nGraphviz-Datei geschrieben: graph.dot  (optional rendern mit: dot -Tpng graph.dot -o graph.png)");
+        Console.WriteLine("\nGraphviz file written: graph.dot  (optional render with: dot -Tpng graph.dot -o graph.png)");
 
         while (true)
         {
-            Console.Write("\nStartknoten eingeben (oder leer zum Beenden): ");
+            Console.Write("\nEnter start node (or empty to exit): ");
             var start = Console.ReadLine();
             if (string.IsNullOrWhiteSpace(start)) break;
 
-            Console.Write("Suchmodus [schnell|tief]: ");
+            Console.Write("Search mode [quick|deep]: ");
             var mode = (Console.ReadLine() ?? "").Trim().ToLower();
 
-            if (mode == "schnell")
+            if (mode == "quick")
             {
-                Console.WriteLine($"\n[Schnelle Suche] Direkte Nachbarn von '{start}':");
+                Console.WriteLine($"\n[Quick Search] Direct neighbors of '{start}':");
                 foreach (var (pred, tar) in g.Neighbors(start))
                     Console.WriteLine($"  {start} -[{pred}]-> {tar}");
             }
             else
             {
-                Console.WriteLine($"\n[Vertiefte Suche] DFS (bis Tiefe 3) ab '{start}':");
+                Console.WriteLine($"\n[Deep Search] DFS (up to depth 3) from '{start}':");
                 var deepPaths = g.DeepSearchDFS(start, 3);
                 foreach (var path in deepPaths)
                     Console.WriteLine("  - " + string.Join(" -> ", path.Select(s => $"{s.from}-[{s.predicate}]->{s.to}")));
@@ -292,9 +292,9 @@ class Program
         }
 
         sw.Stop();
-        Console.WriteLine($"\nLaufzeit (Demo): {sw.ElapsedMilliseconds} ms");
+        Console.WriteLine($"\nRuntime (demo): {sw.ElapsedMilliseconds} ms");
 
-        Console.WriteLine("\nFertig. ENTER zum Beenden.");
+        Console.WriteLine("\nDone. Press ENTER to exit.");
         Console.ReadLine();
     }
 }
