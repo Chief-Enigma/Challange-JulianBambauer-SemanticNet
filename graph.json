@@ -1,0 +1,76 @@
+{
+  "Nodes": [
+    {
+      "Id": "Katze",
+      "Url": "https://example.com/doku/katze-wiki",
+      "Edges": [
+        {
+          "Predicate": "ist",
+          "Target": "Tier"
+        },
+        {
+          "Predicate": "jagt",
+          "Target": "Maus"
+        },
+        {
+          "Predicate": "schl\u00E4ft im",
+          "Target": "Haus"
+        }
+      ]
+    },
+    {
+      "Id": "Tier",
+      "Url": null,
+      "Edges": []
+    },
+    {
+      "Id": "Maus",
+      "Url": null,
+      "Edges": [
+        {
+          "Predicate": "ist",
+          "Target": "Lebewesen"
+        }
+      ]
+    },
+    {
+      "Id": "Lebewesen",
+      "Url": null,
+      "Edges": []
+    },
+    {
+      "Id": "Vogel",
+      "Url": "https://example.com/audio/vogelsang.mp3",
+      "Edges": [
+        {
+          "Predicate": "ist",
+          "Target": "Tier"
+        },
+        {
+          "Predicate": "singt",
+          "Target": "Lied"
+        }
+      ]
+    },
+    {
+      "Id": "Lied",
+      "Url": null,
+      "Edges": []
+    },
+    {
+      "Id": "Haus",
+      "Url": "https://example.com/bilder/haus.png",
+      "Edges": [
+        {
+          "Predicate": "ist",
+          "Target": "Geb\u00E4ude"
+        }
+      ]
+    },
+    {
+      "Id": "Geb\u00E4ude",
+      "Url": null,
+      "Edges": []
+    }
+  ]
+}

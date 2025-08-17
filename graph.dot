@@ -1,0 +1,9 @@
+digraph G {
+  "Katze" -> "Tier" [label="ist"];
+  "Katze" -> "Maus" [label="jagt"];
+  "Katze" -> "Haus" [label="schläft im"];
+  "Maus" -> "Lebewesen" [label="ist"];
+  "Vogel" -> "Tier" [label="ist"];
+  "Vogel" -> "Lied" [label="singt"];
+  "Haus" -> "Gebäude" [label="ist"];
+}
